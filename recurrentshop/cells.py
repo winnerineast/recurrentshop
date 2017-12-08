@@ -23,7 +23,7 @@ class Identity(Layer):
 
 class ExtendedRNNCell(RNNCell):
 
-    def __init__(self, units,
+    def __init__(self, units=None,
                  activation='tanh',
                  recurrent_activation='hard_sigmoid',
                  use_bias=True,
@@ -38,7 +38,9 @@ class ExtendedRNNCell(RNNCell):
                  recurrent_constraint=None,
                  bias_constraint=None,
                  **kwargs):
-        if units is not None:
+        if units is None:
+            assert 'output_dim' in kwargs, 'Missing argument: units'
+        else:
             kwargs['output_dim'] = units
         self.activation = activations.get(activation)
         self.recurrent_activation = activations.get(recurrent_activation)
@@ -57,20 +59,20 @@ class ExtendedRNNCell(RNNCell):
 
     def get_config(self):
         config = {
-                  'activation': activations.serialize(self.activation),
-                  'recurrent_activation': activations.serialize(self.recurrent_activation),
-                  'use_bias': self.use_bias,
-                  'kernel_initializer': initializers.serialize(self.kernel_initializer),
-                  'recurrent_initializer': initializers.serialize(self.recurrent_initializer),
-                  'bias_initializer': initializers.serialize(self.bias_initializer),
-                  'kernel_regularizer': regularizers.serialize(self.kernel_regularizer),
-                  'recurrent_regularizer': regularizers.serialize(self.recurrent_regularizer),
-                  'bias_regularizer': regularizers.serialize(self.bias_regularizer),
-                  'activity_regularizer': regularizers.serialize(self.activity_regularizer),
-                  'kernel_constraint': constraints.serialize(self.kernel_constraint),
-                  'recurrent_constraint': constraints.serialize(self.recurrent_constraint),
-                  'bias_constraint': constraints.serialize(self.bias_constraint)
-                  }
+            'activation': activations.serialize(self.activation),
+            'recurrent_activation': activations.serialize(self.recurrent_activation),
+            'use_bias': self.use_bias,
+            'kernel_initializer': initializers.serialize(self.kernel_initializer),
+            'recurrent_initializer': initializers.serialize(self.recurrent_initializer),
+            'bias_initializer': initializers.serialize(self.bias_initializer),
+            'kernel_regularizer': regularizers.serialize(self.kernel_regularizer),
+            'recurrent_regularizer': regularizers.serialize(self.recurrent_regularizer),
+            'bias_regularizer': regularizers.serialize(self.bias_regularizer),
+            'activity_regularizer': regularizers.serialize(self.activity_regularizer),
+            'kernel_constraint': constraints.serialize(self.kernel_constraint),
+            'recurrent_constraint': constraints.serialize(self.recurrent_constraint),
+            'bias_constraint': constraints.serialize(self.bias_constraint)
+        }
         base_config = super(ExtendedRNNCell, self).get_config()
         config.update(base_config)
         return config
@@ -119,14 +121,14 @@ class GRUCell(ExtendedRNNCell):
                        bias_constraint=self.bias_constraint)
         recurrent_kernel_1 = Dense(output_dim * 2,
                                    kernel_initializer=self.recurrent_initializer,
-                                   kernel_regularizer=self.recurrent_regularizer, 
+                                   kernel_regularizer=self.recurrent_regularizer,
                                    kernel_constraint=self.recurrent_constraint,
                                    use_bias=False)
         recurrent_kernel_2 = Dense(output_dim,
                                    kernel_initializer=self.recurrent_initializer,
-                                   kernel_regularizer=self.recurrent_regularizer, 
+                                   kernel_regularizer=self.recurrent_regularizer,
                                    kernel_constraint=self.recurrent_constraint,
-                                   use_bias=False)                          
+                                   use_bias=False)
         kernel_out = kernel(x)
         recurrent_kernel_1_out = recurrent_kernel_1(h_tm1)
         x0, x1, x2 = get_slices(kernel_out, 3)
@@ -152,17 +154,17 @@ class LSTMCell(ExtendedRNNCell):
         c_tm1 = Input(batch_shape=output_shape)
         kernel = Dense(output_dim * 4,
                        kernel_initializer=self.kernel_initializer,
-                       kernel_regularizer=self.kernel_regularizer, 
+                       kernel_regularizer=self.kernel_regularizer,
                        kernel_constraint=self.kernel_constraint,
                        use_bias=self.use_bias,
                        bias_initializer=self.bias_initializer,
                        bias_regularizer=self.bias_regularizer,
                        bias_constraint=self.bias_constraint)
         recurrent_kernel = Dense(output_dim * 4,
-                                kernel_initializer=self.recurrent_initializer,
-                                kernel_regularizer=self.recurrent_regularizer, 
-                                kernel_constraint=self.recurrent_constraint,
-                                use_bias=False)
+                                 kernel_initializer=self.recurrent_initializer,
+                                 kernel_regularizer=self.recurrent_regularizer,
+                                 kernel_constraint=self.recurrent_constraint,
+                                 use_bias=False)
         kernel_out = kernel(x)
         recurrent_kernel_out = recurrent_kernel(h_tm1)
         x0, x1, x2, x3 = get_slices(kernel_out, 4)
@@ -170,7 +172,7 @@ class LSTMCell(ExtendedRNNCell):
         f = add([x0, r0])
         f = Activation(self.recurrent_activation)(f)
         i = add([x1, r1])
-        i = Activation(self.recurrent_activation)(f)
+        i = Activation(self.recurrent_activation)(i)
         c_prime = add([x2, r2])
         c_prime = Activation(self.activation)(c_prime)
         c = add([multiply([f, c_tm1]), multiply([i, c_prime])])
